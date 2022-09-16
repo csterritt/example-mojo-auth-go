@@ -1,0 +1,15 @@
+{
+	# debug
+	auto_https off
+}
+
+:3000 {
+	handle_path /assets/* {
+		root * ./assets
+		file_server
+	}
+
+	handle /* {
+		reverse_proxy localhost:4000
+	}
+}

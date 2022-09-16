@@ -1,0 +1,23 @@
+{{define "yield"}}
+<h2 class="text-xl font-bold mb-2">Authorize another browser:</h2>
+<div class="card compact shadow">
+    <div class="card-body">
+        <form action="/auth/sign-in" method="POST">
+            <div class="form-control w-full md:w-2/3 mb-4">
+                <label for="email-input" class="label">
+                    <span class="label-text">Authorization code:</span>
+                </label>
+                <input id="email-input"
+                       type="text"
+                       class="input input-bordered"
+                       placeholder="email"
+                       name="auth_info_email"
+                       value="{{ .email }}"/>
+            </div>
+
+            <button class="btn btn-primary" type="submit">Submit</button>
+        </form>
+    </div>
+</div>
+
+{{ end }}

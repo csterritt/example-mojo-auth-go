@@ -1,0 +1,23 @@
+{{define "yield"}}
+<div class="bg-neutral opacity-50 fixed top-0 right-0 bottom-0 left-0"></div>
+
+<div class="flex flex-row justify-center w-full">
+    <div class="w-4/5 md:w-1/2 flex flex-row justify-center">
+        <div class="w-full">
+            <div class="card shadow mt-4 w-full bg-white">
+                <div class="card-body">
+                    <div class="text-xl mb-4">Are you sure you want to sign out?</div>
+
+                    <div class="flex flex-row justify-between">
+                        <a href="/" class="btn">Cancel</a>
+
+                        <form action="/auth/sign-out" method="POST">
+                            <button class="btn btn-primary" type="submit">Sign out</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{ end }}

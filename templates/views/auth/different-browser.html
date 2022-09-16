@@ -1,0 +1,12 @@
+{{define "yield"}}
+    <div class="mx-2">
+        <div class="text-xl font-bold">
+            You have signed in successfully. Visit the browser where you signed in,
+            and click the "I've signed in with another browser!" link to continue.
+        </div>
+
+        {{ if .isAuthorized }}
+            <a href="/" class="btn btn-primary mt-4">Back to search</a>
+        {{ end }}
+    </div>
+{{ end }}

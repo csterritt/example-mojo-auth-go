@@ -1,0 +1,14 @@
+{{define "searchForm" }}
+    <div>
+        <form action="/search" method="POST">
+            <div class="flex flex-row">
+                <input type="text"
+                       class="input input-bordered flex-1"
+                       placeholder="recipe name or ingredients"
+                       name="search_input"/>
+
+                <button class="btn btn-primary ml-2" type="submit">Search</button>
+            </div>
+        </form>
+    </div>
+{{ end }}

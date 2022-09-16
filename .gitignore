@@ -1,0 +1,12 @@
+.idea
+rdb_gorm_ps
+alg.info
+Caddyfile.json
+caddy
+fly.secrets
+css/node_modules/
+loader/*.txt
+loader/*.json
+original_redirect.txt
+recipe-db-only-backup-*.json
+recipe-db-only-backup-*.xz
