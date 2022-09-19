@@ -1,36 +1,30 @@
 {{define "yield"}}
-<h2 class="text-xl font-bold mb-2">Sign in:</h2>
-<div class="card compact shadow">
-    <div class="card-body">
-        <form action="/auth/sign-in" method="POST">
-            <div class="form-control w-full md:w-2/3 mb-4">
-                <label for="email-input" class="label">
-                    <span class="label-text">Email address or authorization code:</span>
-                </label>
-                <input id="email-input"
-                       type="text"
-                       class="input input-bordered"
-                       placeholder="email"
-                       name="auth_info_email"
-                       value="{{ .email }}"/>
-            </div>
+<h3>Sign in</h3>
 
-            <button class="btn btn-primary" type="submit">Submit</button>
-        </form>
-    </div>
+<div>
+    <form action="/auth/sign-in" method="POST">
+        <div>
+            <label for="email-input">
+                <span>Email address:</span>
+            </label>
+            <input id="email-input"
+                   type="text"
+                   placeholder="email"
+                   value="{{ .email }}"/>
+        </div>
+
+        <button type="submit">Submit</button>
+    </form>
 </div>
 
-<footer class="fixed left-0 bottom-0 w-screen mt-1 md:mt-2 px-4 bg-secondary text-neutral-content">
+<footer>
     <div class="">
         <span>Content copyright Chris Sterritt, 2022</span>
         <span class="">‐</span>
-        <span>V9</span>
+        <span>V0</span>
         <span class="">‐</span>
         <span>
-            Flower icon made by
-            <a href="https://game-icons.net" title="Game-icons.net" target="_blank" class="hover:underline">
-                Game-icons.net
-            </a>
+            <i>Attribution</i>
         </span>
     </div>
 </footer>

@@ -1,54 +1,31 @@
 {{define "yield"}}
+<h3>Waiting for authorization code</h3>
+
 <div>
-    <span class="text-xl font-bold">You should have an email soon at "{{ .email }}":</span>
+    <form action="/auth/wait-sign-in" method="POST">
+        <div>
+            <label for="auth-code-input">
+                <span>Authorization code:</span>
+            </label>
+            <input id="auth-code-input"
+                   type="text"
+                   placeholder="auth-code"
+                   value="{{ .authCode }}"/>
+        </div>
 
-    <ul class="pl-8 list list-disc text-lg">
-        <li>
-            Check your <span class="italic">spam</span> folder
-            if nothing shows up.
-        </li>
-
-        <li>
-            If you don't get it in a few minutes, use the "Resend the email"
-            button below.
-        </li>
-
-        <li>
-            You can enter the code below, or use the "I've signed in!" button below to enter
-            the application if you entered the code successfully on another browser.
-        </li>
-    </ul>
+        <button type="submit">Submit</button>
+    </form>
 </div>
 
-<div class="card compact shadow">
-    <div class="card-body">
-        <form action="/auth/enter-code" method="POST">
-            <div class="form-control w-full md:w-2/3 mb-4">
-                <label for="code-input" class="label">
-                    <span class="text-xl font-bold">Code from email:</span>
-                </label>
-                <input id="code-input"
-                       type="text"
-                       class="input input-bordered"
-                       placeholder="Code"
-                       name="auth_info_code"
-                       value=""/>
-            </div>
-
-            <button class="btn btn-primary" type="submit">Submit</button>
-        </form>
+<footer>
+    <div class="">
+        <span>Content copyright Chris Sterritt, 2022</span>
+        <span class="">‐</span>
+        <span>V0</span>
+        <span class="">‐</span>
+        <span>
+            <i>Attribution</i>
+        </span>
     </div>
-</div>
-
-<div class="mt-4">
-    <a href="/auth/resend-email" class="btn btn-primary">Resend the email</a>
-</div>
-
-<div class="mt-4">
-    <a href="/auth/clear-email" class="btn btn-primary">Cancel sign-in</a>
-</div>
-
-<div class="mt-4">
-    <a href="/" class="btn btn-primary">I've signed in with another browser!</a>
-</div>
+</footer>
 {{ end }}

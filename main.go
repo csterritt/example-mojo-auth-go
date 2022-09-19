@@ -61,7 +61,7 @@ func RunWebService(port int) error {
 
 	// Initialize the routes
 	routes.InitializeMainRoutes(router)
-	//routes.InitializeAuthRoutes(router)
+	routes.InitializeAuthRoutes(router)
 	//router.StaticFile("/favicon.ico", "./assets/favicon.ico")
 
 	log.Println("Starting on port", port)

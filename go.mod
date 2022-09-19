@@ -8,10 +8,14 @@ require (
 	github.com/gin-contrib/size v0.0.0-20220829131622-0fc0bc875336
 	github.com/gin-gonic/gin v1.8.1
 	github.com/gorilla/sessions v1.2.1
+	github.com/mojoauth/go-sdk v0.2.1
 	github.com/ulule/limiter/v3 v3.10.0
 )
 
 require (
+	github.com/MicahParks/keyfunc v0.4.2 // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
+	github.com/form3tech-oss/jwt-go v3.2.2+incompatible // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect

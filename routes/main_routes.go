@@ -18,7 +18,7 @@ func getShowService(context *gin.Context) {
 		"greeting": "Hello (show) world!",
 	})
 	if err != nil {
-		fmt.Printf("recipe showTemplate render failed with error %v\n", err)
+		fmt.Printf("main showTemplate render failed with error %v\n", err)
 	}
 }
 
@@ -27,7 +27,7 @@ func getIndexService(context *gin.Context) {
 		"greeting": "Hello (index) world!",
 	})
 	if err != nil {
-		fmt.Printf("recipe showTemplate render failed with error %v\n", err)
+		fmt.Printf("main indexTemplate render failed with error %v\n", err)
 	}
 	//isAuthorized := cookie_access.GetSessionValue(context, cookie_access.IsAuthorized)
 	//err := indexTemplate.Render(context, gin.H{"isAuthorized": isAuthorized})
