@@ -11,7 +11,7 @@ import (
 )
 
 // Name of the cookie.
-const sessionName = "recipe-db-session"
+const sessionName = "main-session"
 
 // Maximum age of the session (about six months)
 const sessionMaxAge = 3600 * 24 * 30 * 6

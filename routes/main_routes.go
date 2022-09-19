@@ -32,7 +32,7 @@ func getIndexService(context *gin.Context) {
 	//isAuthorized := cookie_access.GetSessionValue(context, cookie_access.IsAuthorized)
 	//err := indexTemplate.Render(context, gin.H{"isAuthorized": isAuthorized})
 	//if err != nil {
-	//	fmt.Printf("recipe indexTemplate render failed with error %v\n", err)
+	//	fmt.Printf("main indexTemplate render failed with error %v\n", err)
 	//}
 }
 
@@ -46,7 +46,7 @@ func Authorizer() gin.HandlerFunc {
 			return
 		}
 
-		if len(emailValue) == 0 {
+		if len(emailValue) == 0 && len(isAuthorized) != 0 {
 			cookie_access.SetSessionValue(context, cookie_access.IsAuthorized, "")
 			context.Redirect(http.StatusTemporaryRedirect, "/")
 			context.AbortWithStatus(http.StatusTemporaryRedirect)
@@ -63,9 +63,8 @@ func InitializeMainRoutes(router *gin.Engine) {
 	indexTemplate = views.NewView("layout.html", "templates/views/index.html")
 	showTemplate = views.NewView("layout.html", "templates/views/show.html")
 
-	//authorized := Authorizer()
+	authorized := Authorizer()
 	//router.GET("/", authorized, getIndexService)
-	//router.GET("/show", authorized, getShowService)
 	router.GET("/", getIndexService)
-	router.GET("/show", getShowService)
+	router.GET("/show", authorized, getShowService)
 }
