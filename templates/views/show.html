@@ -2,4 +2,10 @@
     <h3>Show</h3>
 
     <div>{{ .greeting }}</div>
+
+    <div>
+        <form action="/auth/sign-out" method="POST">
+            <button type="submit">Sign out</button>
+        </form>
+    </div>
 {{end}}

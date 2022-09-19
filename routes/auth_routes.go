@@ -3,6 +3,8 @@ package routes
 import (
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"mojo-auth-test-1/cookie_access"
 	"mojo-auth-test-1/views"
@@ -24,6 +26,16 @@ const emailCookie = "given-email"
 
 var signInTemplate *views.View
 var waitSignInTemplate *views.View
+var emailPattern *regexp.Regexp
+
+func init() {
+	emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+}
+
+// validate that the given string looks like an email address
+func isValidEmail(email string) bool {
+	return emailPattern.MatchString(email)
+}
 
 func getSignInService(context *gin.Context) {
 	err := signInTemplate.Render(context, gin.H{
@@ -40,8 +52,13 @@ func getSignInService(context *gin.Context) {
 }
 
 func postSignInService(context *gin.Context) {
-	//authEmail := strings.Trim(context.PostForm("auth_info_email"), " \n\r\t")
-	//if !isValidEmail(authEmail) {
+	authEmail := strings.Trim(context.PostForm("auth_info_email"), " \n\r\t")
+	if isValidEmail(authEmail) {
+		cookie_access.SetSessionCookie(context, emailCookie, authEmail)
+		context.Redirect(http.StatusFound, "/auth/wait-sign-in")
+		return
+	}
+
 	//	if len(authEmail) == db_access.TokenLength {
 	//		code := finishSignInWithCode(context, authEmail)
 	//		if code == AuthSuccessSameBrowser {
@@ -64,6 +81,13 @@ func postSignInService(context *gin.Context) {
 	//} else {
 	//	context.Redirect(http.StatusFound, "/auth/sign-in")
 	//}
+	context.Redirect(http.StatusFound, "/auth/sign-in")
+}
+
+func postSignOutService(context *gin.Context) {
+	cookie_access.SetSessionCookie(context, emailCookie, "")
+	cookie_access.SetSessionCookie(context, cookie_access.IsAuthorized, "")
+	context.Redirect(http.StatusFound, "/")
 }
 
 func getWaitSignInService(context *gin.Context) {
@@ -81,6 +105,13 @@ func getWaitSignInService(context *gin.Context) {
 }
 
 func postWaitSignInService(context *gin.Context) {
+	authCode := strings.Trim(context.PostForm("auth_code_input"), " \n\r\t")
+	if authCode == "1234" {
+		cookie_access.SetSessionCookie(context, cookie_access.IsAuthorized, "true")
+		context.Redirect(http.StatusFound, "/show")
+		return
+	}
+
 	//authEmail := strings.Trim(context.PostForm("auth_info_email"), " \n\r\t")
 	//if !isValidEmail(authEmail) {
 	//	if len(authEmail) == db_access.TokenLength {
@@ -105,6 +136,7 @@ func postWaitSignInService(context *gin.Context) {
 	//} else {
 	//	context.Redirect(http.StatusFound, "/auth/sign-in")
 	//}
+	context.Redirect(http.StatusFound, "/auth/wait-sign-in")
 }
 
 func SkipAuthorizer() gin.HandlerFunc {
@@ -129,4 +161,5 @@ func InitializeAuthRoutes(router *gin.Engine) {
 	router.POST("/auth/sign-in", postSignInService)
 	router.GET("/auth/wait-sign-in", skipAuth, getWaitSignInService)
 	router.POST("/auth/wait-sign-in", postWaitSignInService)
+	router.POST("/auth/sign-out", postSignOutService)
 }
