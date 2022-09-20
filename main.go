@@ -78,7 +78,7 @@ func RunWebService(port int) error {
 func verifyEnvironment() {
 	problemFound := false
 	for _, str := range []string{"SERVER_HOST", "MAIN_AUTH_SECRET", "MAIN_ENC_SECRET",
-		"SMTP_USERNAME", "SMTP_PASS", "SMTP_HOST"} {
+		"SMTP_USERNAME", "SMTP_PASS", "SMTP_HOST", "MOJO_APP_ID"} {
 		val := os.Getenv(str)
 		if len(strings.Trim(val, " \t\n\r")) == 0 {
 			problemFound = true

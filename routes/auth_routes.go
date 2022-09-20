@@ -1,8 +1,11 @@
 package routes
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 
@@ -10,9 +13,52 @@ import (
 	"mojo-auth-test-1/views"
 
 	"github.com/gin-gonic/gin"
+	go_mojoauth "github.com/mojoauth/go-sdk"
+	"github.com/mojoauth/go-sdk/api"
+	"github.com/mojoauth/go-sdk/httprutils"
+	"github.com/mojoauth/go-sdk/mojoerror"
 )
 
+/*
+	{
+		"authenticated":true,
+		"oauth":{
+			"access_token":"<long-string>",
+			"id_token":"<long-string>",
+			"refresh_token":"3bf1c663-5226-4b35-8710-b04beb77cbb4",
+			"expires_in":"2022-09-23T20:26:27Z",
+			"token_type":"Bearer"
+		},
+		"user":{
+			"created_at":"2022-09-20T20:26:27Z",
+			"updated_at":"2022-09-20T20:26:27Z",
+			"issuer":"https://www.mojoauth.com",
+			"user_id":"6324d91c3b65af019d250ac7",
+			"identifier":"csterritt@gmail.com"
+		}
+	}
+*/
 type AuthCodeResult int
+type MojoAuthState struct {
+	StateId string `json:"state_id"`
+}
+type MojoAuthResult struct {
+	Authenticated bool `json:"authenticated"`
+	Oauth         struct {
+		AccessToken  string `json:"access_token"`
+		IdToken      string `json:"id_token"`
+		RefreshToken string `json:"refresh_token"`
+		ExpiresIn    string `json:"expires_in"`
+		TokenType    string `json:"token_type"`
+	}
+	User struct {
+		CreatedAt  string `json:"created_at"`
+		UpdatedAt  string `json:"updated_at"`
+		Issuer     string `json:"issuer"`
+		UserId     string `json:"user_id"`
+		Identifier string `json:"identifier"`
+	}
+}
 
 const (
 	AuthExpired AuthCodeResult = iota
@@ -23,6 +69,9 @@ const (
 
 // Name of the email.
 const emailCookie = "given-email"
+const stateIdCookie = "state-id"
+const jwtToken = "jwt-token"
+const refreshToken = "refresh-token"
 
 var signInTemplate *views.View
 var waitSignInTemplate *views.View
@@ -66,38 +115,54 @@ func postSignInService(context *gin.Context) {
 
 	if isValidEmail(authEmail) {
 		cookie_access.SetSessionCookie(context, emailCookie, authEmail)
-		context.Redirect(http.StatusFound, "/auth/wait-sign-in")
-		return
+
+		errors := ""
+
+		cfg := go_mojoauth.Config{
+			ApiKey: os.Getenv("MOJO_APP_ID"),
+		}
+		mojoClient, err := go_mojoauth.NewMojoAuth(&cfg)
+		var res *httprutils.Response
+		if err != nil {
+			errors += err.(mojoerror.Error).OrigErr().Error()
+			//      respCode = 500
+		} else {
+			body := map[string]string{
+				"email": authEmail,
+			}
+			queryParams := map[string]string{
+				"language": "en",
+			}
+			res, err = api.Mojoauth{Client: mojoClient}.SigninWithEmailOTP(body, queryParams)
+			if err != nil {
+				errors += "SWEOTP: " + err.(mojoerror.Error).OrigErr().Error()
+				//		respCode = 500
+			}
+		}
+
+		if errors != "" {
+			log.Printf(errors)
+		} else {
+			fmt.Printf("Raw body: '%s'\n", res.Body)
+			var data MojoAuthState
+			err = json.Unmarshal([]byte(res.Body), &data)
+			if err == nil {
+				fmt.Printf("Raw body: '%s', struct %#v\n", res.Body, data)
+				cookie_access.SetSessionValue(context, stateIdCookie, data.StateId)
+				context.Redirect(http.StatusFound, "/auth/wait-sign-in")
+			} else {
+				fmt.Println("Error on JSON unmarshall:", err)
+			}
+		}
 	}
 
-	//	if len(authEmail) == db_access.TokenLength {
-	//		code := finishSignInWithCode(context, authEmail)
-	//		if code == AuthSuccessSameBrowser {
-	//			context.Redirect(http.StatusFound, "/")
-	//			return
-	//		} else if code == AuthSuccessDifferentBrowser {
-	//			context.Redirect(http.StatusFound, "/auth/different-browser")
-	//			return
-	//		}
-	//	}
-	//	cookie_access.SetSessionCookie(context, submittedEmailCookie, authEmail)
-	//
-	//	messages.AddFlashMessage(context, "error", "That is not a valid email address or sign-in code.")
-	//	context.Redirect(http.StatusFound, "/auth/sign-in")
-	//	return
-	//}
-	//
-	//if len(authEmail) > 0 {
-	//	setupForSignIn(context, authEmail)
-	//} else {
-	//	context.Redirect(http.StatusFound, "/auth/sign-in")
-	//}
 	context.Redirect(http.StatusFound, "/auth/sign-in")
 }
 
 func postSignOutService(context *gin.Context) {
 	cookie_access.SetSessionValue(context, emailCookie, "")
-	cookie_access.SetSessionValue(context, cookie_access.IsAuthorized, "")
+	cookie_access.SetSessionValue(context, jwtToken, "")
+	cookie_access.SetSessionValue(context, refreshToken, "")
 	context.Redirect(http.StatusFound, "/")
 }
 
@@ -124,62 +189,66 @@ func getWaitSignInService(context *gin.Context) {
 func postCancelSignInService(context *gin.Context) {
 	cookie_access.RemoveCookie(context, emailCookie)
 	cookie_access.SetSessionValue(context, emailCookie, "")
-	cookie_access.SetSessionValue(context, cookie_access.IsAuthorized, "")
+	cookie_access.SetSessionValue(context, jwtToken, "")
+	cookie_access.SetSessionValue(context, refreshToken, "")
 	context.Redirect(http.StatusFound, "/")
 }
 
 func postWaitSignInService(context *gin.Context) {
 	authCode := strings.Trim(context.PostForm("auth_code_input"), " \n\r\t")
-	if len(authCode) == 0 {
+	stateIdValue := cookie_access.GetSessionValue(context, stateIdCookie)
+	if len(authCode) == 0 || len(stateIdValue) == 0 {
+		// todo: clear cookies/session or redirect to /auth/wait-sign-in?
 		context.Redirect(http.StatusFound, "/")
 		return
 	}
 
-	if authCode == "1234" {
-		cookie_access.SetSessionValue(context, cookie_access.IsAuthorized, "true")
-		email := cookie_access.GetCookie(context, emailCookie)
-		cookie_access.SetSessionValue(context, emailCookie, email)
-		cookie_access.RemoveCookie(context, emailCookie)
-		context.Redirect(http.StatusFound, "/show")
-		return
+	body := map[string]string{
+		"state_id": stateIdValue,
+		"otp":      authCode,
+	}
+	cfg := go_mojoauth.Config{
+		ApiKey: os.Getenv("MOJO_APP_ID"),
+	}
+	errors := ""
+	mojoClient, err := go_mojoauth.NewMojoAuth(&cfg)
+	res, err := api.Mojoauth{Client: mojoClient}.VerifyEmailOTP(body)
+	if err != nil {
+		errors += err.(mojoerror.Error).OrigErr().Error()
+		//		respCode = 500
 	}
 
-	//authEmail := strings.Trim(context.PostForm("auth_info_email"), " \n\r\t")
-	//if !isValidEmail(authEmail) {
-	//	if len(authEmail) == db_access.TokenLength {
-	//		code := finishSignInWithCode(context, authEmail)
-	//		if code == AuthSuccessSameBrowser {
-	//			context.Redirect(http.StatusFound, "/")
-	//			return
-	//		} else if code == AuthSuccessDifferentBrowser {
-	//			context.Redirect(http.StatusFound, "/auth/different-browser")
-	//			return
-	//		}
-	//	}
-	//	cookie_access.SetSessionCookie(context, submittedEmailCookie, authEmail)
-	//
-	//	messages.AddFlashMessage(context, "error", "That is not a valid email address or sign-in code.")
-	//	context.Redirect(http.StatusFound, "/auth/sign-in")
-	//	return
-	//}
-	//
-	//if len(authEmail) > 0 {
-	//	setupForSignIn(context, authEmail)
-	//} else {
-	//	context.Redirect(http.StatusFound, "/auth/sign-in")
-	//}
+	if errors != "" {
+		log.Printf(errors)
+
+		context.Redirect(http.StatusFound, "/auth/wait-sign-in")
+		return
+	}
+	fmt.Println(res.Body)
+	var info MojoAuthResult
+	err = json.Unmarshal([]byte(res.Body), &info)
+	if err == nil {
+		fmt.Printf("Saving jwtToken of length %d, refreshToken of length %d\n", len(info.Oauth.AccessToken), len(info.Oauth.RefreshToken))
+		cookie_access.RemoveCookie(context, emailCookie)
+		cookie_access.SetSessionValue(context, jwtToken, info.Oauth.AccessToken)
+		cookie_access.SetSessionValue(context, refreshToken, info.Oauth.RefreshToken)
+		context.Redirect(http.StatusFound, "/")
+		return
+	} else {
+		fmt.Printf("Got error unmarshalling MojoAuthResult: %v\n", err)
+	}
+
 	context.Redirect(http.StatusFound, "/auth/wait-sign-in")
 }
 
 func SkipAuthorizer() gin.HandlerFunc {
 	return func(context *gin.Context) {
-		emailValue := cookie_access.GetSessionValue(context, emailCookie)
-		isAuthorized := cookie_access.GetSessionValue(context, cookie_access.IsAuthorized)
-
-		if len(emailValue) > 0 && isAuthorized == "true" {
-			context.Redirect(http.StatusTemporaryRedirect, "/")
-			context.AbortWithStatus(http.StatusTemporaryRedirect)
-		}
+		//emailValue := cookie_access.GetSessionValue(context, emailCookie)
+		//
+		//if len(emailValue) > 0 {
+		//	context.Redirect(http.StatusTemporaryRedirect, "/")
+		//	context.AbortWithStatus(http.StatusTemporaryRedirect)
+		//}
 		context.Next()
 	}
 }

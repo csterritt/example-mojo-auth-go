@@ -46,7 +46,6 @@ func (v *View) Render(context *gin.Context, data interface{}) error {
 		}
 	}
 
-	isAuthorized := cookie_access.GetSessionValue(context, cookie_access.IsAuthorized)
 	userCanEdit := cookie_access.GetSessionValue(context, cookie_access.UserCanEdit)
 
 	var dataMap gin.H
@@ -56,7 +55,6 @@ func (v *View) Render(context *gin.Context, data interface{}) error {
 			"infoFlashes":     template.HTML(strings.Join(infoFlashes, "\n")),
 			"hasErrorFlashes": hasErrorFlashes,
 			"errorFlashes":    template.HTML(strings.Join(errorFlashes, "\n")),
-			"isAuthorized":    isAuthorized,
 			"userCanEdit":     userCanEdit,
 		}
 		data = dataMap
@@ -66,7 +64,6 @@ func (v *View) Render(context *gin.Context, data interface{}) error {
 		dataMap["infoFlashes"] = template.HTML(strings.Join(infoFlashes, "\n"))
 		dataMap["hasErrorFlashes"] = hasErrorFlashes
 		dataMap["errorFlashes"] = template.HTML(strings.Join(errorFlashes, "\n"))
-		dataMap["isAuthorized"] = isAuthorized
 		dataMap["userCanEdit"] = userCanEdit
 	}
 

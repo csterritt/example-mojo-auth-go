@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const IsAuthorized = "is-authorized"
 const UserCanEdit = "user-can-edit"
 const UserId = "user-id"
 

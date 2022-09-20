@@ -7,11 +7,9 @@
         <a href="/show">Show something cool</a>
     </div>
 
-    {{ if .isAuth }}
-        <div>
-            <form action="/auth/sign-out" method="POST">
-                <button type="submit">Sign out</button>
-            </form>
-        </div>
-    {{ end }}
+    <div>
+        <form action="/auth/sign-out" method="POST">
+            <button type="submit">Sign out</button>
+        </form>
+    </div>
 {{ end }}
