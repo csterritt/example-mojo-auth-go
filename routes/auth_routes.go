@@ -59,6 +59,11 @@ func getSignInService(context *gin.Context) {
 
 func postSignInService(context *gin.Context) {
 	authEmail := strings.Trim(context.PostForm("auth_info_email"), " \n\r\t")
+	if len(authEmail) == 0 {
+		context.Redirect(http.StatusFound, "/")
+		return
+	}
+
 	if isValidEmail(authEmail) {
 		cookie_access.SetSessionCookie(context, emailCookie, authEmail)
 		context.Redirect(http.StatusFound, "/auth/wait-sign-in")
@@ -125,6 +130,11 @@ func postCancelSignInService(context *gin.Context) {
 
 func postWaitSignInService(context *gin.Context) {
 	authCode := strings.Trim(context.PostForm("auth_code_input"), " \n\r\t")
+	if len(authCode) == 0 {
+		context.Redirect(http.StatusFound, "/")
+		return
+	}
+
 	if authCode == "1234" {
 		cookie_access.SetSessionValue(context, cookie_access.IsAuthorized, "true")
 		email := cookie_access.GetCookie(context, emailCookie)
