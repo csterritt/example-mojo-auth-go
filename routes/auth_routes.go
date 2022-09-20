@@ -38,6 +38,12 @@ func isValidEmail(email string) bool {
 }
 
 func getSignInService(context *gin.Context) {
+	email := cookie_access.GetCookie(context, emailCookie)
+	if len(email) > 0 {
+		context.Redirect(http.StatusFound, "/auth/wait-sign-in")
+		return
+	}
+
 	err := signInTemplate.Render(context, gin.H{
 		"greeting": "Hello (sign in) world!",
 	})
@@ -85,12 +91,18 @@ func postSignInService(context *gin.Context) {
 }
 
 func postSignOutService(context *gin.Context) {
-	cookie_access.SetSessionCookie(context, emailCookie, "")
-	cookie_access.SetSessionCookie(context, cookie_access.IsAuthorized, "")
+	cookie_access.SetSessionValue(context, emailCookie, "")
+	cookie_access.SetSessionValue(context, cookie_access.IsAuthorized, "")
 	context.Redirect(http.StatusFound, "/")
 }
 
 func getWaitSignInService(context *gin.Context) {
+	email := cookie_access.GetCookie(context, emailCookie)
+	if len(email) == 0 {
+		context.Redirect(http.StatusFound, "/auth/sign-in")
+		return
+	}
+
 	err := waitSignInTemplate.Render(context, gin.H{
 		"greeting": "Hello (wait sign in) world!",
 	})
@@ -104,10 +116,20 @@ func getWaitSignInService(context *gin.Context) {
 	//}
 }
 
+func postCancelSignInService(context *gin.Context) {
+	cookie_access.RemoveCookie(context, emailCookie)
+	cookie_access.SetSessionValue(context, emailCookie, "")
+	cookie_access.SetSessionValue(context, cookie_access.IsAuthorized, "")
+	context.Redirect(http.StatusFound, "/")
+}
+
 func postWaitSignInService(context *gin.Context) {
 	authCode := strings.Trim(context.PostForm("auth_code_input"), " \n\r\t")
 	if authCode == "1234" {
-		cookie_access.SetSessionCookie(context, cookie_access.IsAuthorized, "true")
+		cookie_access.SetSessionValue(context, cookie_access.IsAuthorized, "true")
+		email := cookie_access.GetCookie(context, emailCookie)
+		cookie_access.SetSessionValue(context, emailCookie, email)
+		cookie_access.RemoveCookie(context, emailCookie)
 		context.Redirect(http.StatusFound, "/show")
 		return
 	}
@@ -161,5 +183,6 @@ func InitializeAuthRoutes(router *gin.Engine) {
 	router.POST("/auth/sign-in", postSignInService)
 	router.GET("/auth/wait-sign-in", skipAuth, getWaitSignInService)
 	router.POST("/auth/wait-sign-in", postWaitSignInService)
+	router.POST("/auth/cancel-sign-in", postCancelSignInService)
 	router.POST("/auth/sign-out", postSignOutService)
 }

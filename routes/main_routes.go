@@ -23,7 +23,7 @@ func getShowService(context *gin.Context) {
 }
 
 func getIndexService(context *gin.Context) {
-	isAuth := cookie_access.GetCookie(context, cookie_access.IsAuthorized) == "true"
+	isAuth := cookie_access.GetSessionValue(context, cookie_access.IsAuthorized) == "true"
 	err := indexTemplate.Render(context, gin.H{
 		"greeting": "Hello (index) world!",
 		"isAuth":   isAuth,
@@ -40,8 +40,8 @@ func getIndexService(context *gin.Context) {
 
 func Authorizer() gin.HandlerFunc {
 	return func(context *gin.Context) {
-		emailValue := cookie_access.GetCookie(context, emailCookie)
-		isAuthorized := cookie_access.GetCookie(context, cookie_access.IsAuthorized)
+		emailValue := cookie_access.GetSessionValue(context, emailCookie)
+		isAuthorized := cookie_access.GetSessionValue(context, cookie_access.IsAuthorized)
 
 		if len(emailValue) > 0 && isAuthorized == "true" {
 			context.Next()
