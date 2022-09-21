@@ -1,4 +1,4 @@
 #!/bin/bash
 set -Eeuo pipefail
-/usr/local/opt/caddy/bin/caddy adapt --config Caddyfile | python -m json.tool | ./nuke_tls_cp.pl > Caddyfile.json
-/usr/local/opt/caddy/bin/caddy run --config Caddyfile.json
+/usr/local/bin/caddy adapt --config Caddyfile | python -m json.tool | ./nuke_tls_cp.pl > Caddyfile.json
+/usr/local/bin/caddy run --config Caddyfile.json
