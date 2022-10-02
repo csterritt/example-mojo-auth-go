@@ -60,18 +60,10 @@ type MojoAuthResult struct {
 	}
 }
 
-const (
-	AuthExpired AuthCodeResult = iota
-	AuthDbError
-	AuthSuccessSameBrowser
-	AuthSuccessDifferentBrowser
-)
-
 // Name of the email.
 const emailCookie = "given-email"
 const stateIdCookie = "state-id"
-const jwtToken = "jwt-token"
-const refreshToken = "refresh-token"
+const isAuthCookie = "is-auth"
 
 var signInTemplate *views.View
 var waitSignInTemplate *views.View
@@ -161,8 +153,8 @@ func postSignInService(context *gin.Context) {
 
 func postSignOutService(context *gin.Context) {
 	cookie_access.SetSessionValue(context, emailCookie, "")
-	cookie_access.SetSessionValue(context, jwtToken, "")
-	cookie_access.SetSessionValue(context, refreshToken, "")
+	cookie_access.SetSessionValue(context, stateIdCookie, "")
+	cookie_access.SetSessionValue(context, isAuthCookie, "")
 	context.Redirect(http.StatusFound, "/")
 }
 
@@ -189,8 +181,8 @@ func getWaitSignInService(context *gin.Context) {
 func postCancelSignInService(context *gin.Context) {
 	cookie_access.RemoveCookie(context, emailCookie)
 	cookie_access.SetSessionValue(context, emailCookie, "")
-	cookie_access.SetSessionValue(context, jwtToken, "")
-	cookie_access.SetSessionValue(context, refreshToken, "")
+	cookie_access.SetSessionValue(context, stateIdCookie, "")
+	cookie_access.SetSessionValue(context, isAuthCookie, "")
 	context.Redirect(http.StatusFound, "/")
 }
 
@@ -230,8 +222,8 @@ func postWaitSignInService(context *gin.Context) {
 	if err == nil {
 		fmt.Printf("Saving jwtToken of length %d, refreshToken of length %d\n", len(info.Oauth.AccessToken), len(info.Oauth.RefreshToken))
 		cookie_access.RemoveCookie(context, emailCookie)
-		cookie_access.SetSessionValue(context, jwtToken, info.Oauth.AccessToken)
-		cookie_access.SetSessionValue(context, refreshToken, info.Oauth.RefreshToken)
+		cookie_access.SetSessionValue(context, stateIdCookie, "")
+		cookie_access.SetSessionValue(context, isAuthCookie, "true")
 		context.Redirect(http.StatusFound, "/")
 		return
 	} else {

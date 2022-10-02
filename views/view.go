@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"mojo-auth-test-1/cookie_access"
 	"mojo-auth-test-1/messages"
 
 	"github.com/gin-gonic/gin"
@@ -46,8 +45,6 @@ func (v *View) Render(context *gin.Context, data interface{}) error {
 		}
 	}
 
-	userCanEdit := cookie_access.GetSessionValue(context, cookie_access.UserCanEdit)
-
 	var dataMap gin.H
 	if data == nil {
 		dataMap = gin.H{
@@ -55,7 +52,6 @@ func (v *View) Render(context *gin.Context, data interface{}) error {
 			"infoFlashes":     template.HTML(strings.Join(infoFlashes, "\n")),
 			"hasErrorFlashes": hasErrorFlashes,
 			"errorFlashes":    template.HTML(strings.Join(errorFlashes, "\n")),
-			"userCanEdit":     userCanEdit,
 		}
 		data = dataMap
 	} else {
@@ -64,7 +60,6 @@ func (v *View) Render(context *gin.Context, data interface{}) error {
 		dataMap["infoFlashes"] = template.HTML(strings.Join(infoFlashes, "\n"))
 		dataMap["hasErrorFlashes"] = hasErrorFlashes
 		dataMap["errorFlashes"] = template.HTML(strings.Join(errorFlashes, "\n"))
-		dataMap["userCanEdit"] = userCanEdit
 	}
 
 	return v.Template.ExecuteTemplate(context.Writer, v.Layout, data)

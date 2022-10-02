@@ -2,17 +2,12 @@ package routes
 
 import (
 	"fmt"
-	"log"
 	"net/http"
-	"os"
 
 	"mojo-auth-test-1/cookie_access"
 	"mojo-auth-test-1/views"
 
 	"github.com/gin-gonic/gin"
-	go_mojoauth "github.com/mojoauth/go-sdk"
-	"github.com/mojoauth/go-sdk/api"
-	"github.com/mojoauth/go-sdk/mojoerror"
 )
 
 var indexTemplate *views.View
@@ -38,42 +33,15 @@ func getIndexService(context *gin.Context) {
 
 func Authorizer() gin.HandlerFunc {
 	return func(context *gin.Context) {
-		jwt := cookie_access.GetSessionValue(context, jwtToken)
-		fmt.Printf("Got jwt of length %d\n", len(jwt))
-		if len(jwt) == 0 {
+		isAuth := cookie_access.GetSessionValue(context, isAuthCookie)
+		fmt.Printf("Got isAuth %s\n", isAuth)
+		if len(isAuth) == 0 || isAuth != "true" {
 			context.Redirect(http.StatusTemporaryRedirect, "/auth/sign-in")
 			context.AbortWithStatus(http.StatusTemporaryRedirect)
 			return
 		}
 
-		cfg := go_mojoauth.Config{
-			ApiKey: os.Getenv("MOJO_APP_ID"),
-		}
-		errors := ""
-		mojoClient, err := go_mojoauth.NewMojoAuth(&cfg)
-		res, err := api.Mojoauth{Client: mojoClient}.VerifyToken(jwt)
-		fmt.Printf("res from VerifyToken is %#v\n", res)
-		if err != nil {
-			errors += err.(mojoerror.Error).OrigErr().Error()
-			//		respCode = 500
-		} else if res.IsValid {
-			context.Next()
-			return
-		} else {
-			errors += "res.IsValid is false?"
-		}
-
-		if errors != "" {
-			log.Printf(errors)
-			context.Redirect(http.StatusTemporaryRedirect, "/auth/sign-in")
-			context.AbortWithStatus(http.StatusTemporaryRedirect)
-
-			return
-		}
-		fmt.Println("Didn't get errors, but somehow wound up here. res.Invalid is", res.IsValid)
-
-		context.Redirect(http.StatusTemporaryRedirect, "/")
-		context.AbortWithStatus(http.StatusTemporaryRedirect)
+		context.Next()
 	}
 }
 

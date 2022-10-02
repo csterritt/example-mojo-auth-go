@@ -8,9 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const UserCanEdit = "user-can-edit"
-const UserId = "user-id"
-
 // GetCookie - Get the value of the named cookie, or return ""
 func GetCookie(context *gin.Context, name string) string {
 	var value string

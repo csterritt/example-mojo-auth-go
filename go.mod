@@ -8,7 +8,7 @@ require (
 	github.com/gin-contrib/size v0.0.0-20220829131622-0fc0bc875336
 	github.com/gin-gonic/gin v1.8.1
 	github.com/gorilla/sessions v1.2.1
-	github.com/mojoauth/go-sdk v0.2.1
+	github.com/mojoauth/go-sdk v0.2.2
 	github.com/ulule/limiter/v3 v3.10.0
 )
 
