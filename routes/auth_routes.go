@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"mojo-auth-test-1/cookie_access"
+	"mojo-auth-test-1/messages"
 	"mojo-auth-test-1/views"
 
 	"github.com/gin-gonic/gin"
@@ -91,21 +92,21 @@ func getSignInService(context *gin.Context) {
 	if err != nil {
 		fmt.Printf("auth signInTemplate render failed with error %v\n", err)
 	}
-	//emailValue := cookie_access.GetSessionValue(context, emailCookie)
-	//if emailValue != "" {
-	//	context.Redirect(http.StatusFound, "/auth/waiting")
-	//	return
-	//}
 }
 
 func postSignInService(context *gin.Context) {
 	authEmail := strings.Trim(context.PostForm("auth_info_email"), " \n\r\t")
 	if len(authEmail) == 0 {
-		context.Redirect(http.StatusFound, "/")
+		messages.AddFlashMessage(context, "error", "That is not a valid email.")
+		context.Redirect(http.StatusFound, "/auth/sign-in")
 		return
 	}
 
-	if isValidEmail(authEmail) {
+	if !isValidEmail(authEmail) {
+		messages.AddFlashMessage(context, "error", "That is not a valid email.")
+		context.Redirect(http.StatusFound, "/auth/sign-in")
+		return
+	} else {
 		cookie_access.SetSessionCookie(context, emailCookie, authEmail)
 
 		errors := ""
@@ -141,6 +142,7 @@ func postSignInService(context *gin.Context) {
 			if err == nil {
 				fmt.Printf("Raw body: '%s', struct %#v\n", res.Body, data)
 				cookie_access.SetSessionValue(context, stateIdCookie, data.StateId)
+				messages.AddFlashMessage(context, "info", "An email with the validation code has been sent.")
 				context.Redirect(http.StatusFound, "/auth/wait-sign-in")
 			} else {
 				fmt.Println("Error on JSON unmarshall:", err)
@@ -148,6 +150,7 @@ func postSignInService(context *gin.Context) {
 		}
 	}
 
+	messages.AddFlashMessage(context, "error", "An internal error occured, please try again.")
 	context.Redirect(http.StatusFound, "/auth/sign-in")
 }
 
@@ -155,6 +158,7 @@ func postSignOutService(context *gin.Context) {
 	cookie_access.SetSessionValue(context, emailCookie, "")
 	cookie_access.SetSessionValue(context, stateIdCookie, "")
 	cookie_access.SetSessionValue(context, isAuthCookie, "")
+	messages.AddFlashMessage(context, "info", "Signed out successfully.")
 	context.Redirect(http.StatusFound, "/")
 }
 
@@ -165,17 +169,10 @@ func getWaitSignInService(context *gin.Context) {
 		return
 	}
 
-	err := waitSignInTemplate.Render(context, gin.H{
-		"greeting": "Hello (wait sign in) world!",
-	})
+	err := waitSignInTemplate.Render(context, gin.H{})
 	if err != nil {
 		fmt.Printf("auth waitSignInTemplate render failed with error %v\n", err)
 	}
-	//emailValue := cookie_access.GetSessionValue(context, emailCookie)
-	//if emailValue != "" {
-	//	context.Redirect(http.StatusFound, "/auth/waiting")
-	//	return
-	//}
 }
 
 func postCancelSignInService(context *gin.Context) {
@@ -183,15 +180,23 @@ func postCancelSignInService(context *gin.Context) {
 	cookie_access.SetSessionValue(context, emailCookie, "")
 	cookie_access.SetSessionValue(context, stateIdCookie, "")
 	cookie_access.SetSessionValue(context, isAuthCookie, "")
+	messages.AddFlashMessage(context, "info", "Sign in cancelled.")
 	context.Redirect(http.StatusFound, "/")
 }
 
 func postWaitSignInService(context *gin.Context) {
-	authCode := strings.Trim(context.PostForm("auth_code_input"), " \n\r\t")
 	stateIdValue := cookie_access.GetSessionValue(context, stateIdCookie)
-	if len(authCode) == 0 || len(stateIdValue) == 0 {
-		// todo: clear cookies/session or redirect to /auth/wait-sign-in?
+	if len(stateIdValue) == 0 {
+		cookie_access.RemoveCookie(context, emailCookie)
+		cookie_access.SetSessionValue(context, stateIdCookie, "")
+		cookie_access.SetSessionValue(context, isAuthCookie, "")
 		context.Redirect(http.StatusFound, "/")
+	}
+
+	authCode := strings.Trim(context.PostForm("auth_code_input"), " \n\r\t")
+	if len(authCode) == 0 {
+		messages.AddFlashMessage(context, "error", "You must enter the sign-in code from the email.")
+		context.Redirect(http.StatusFound, "/auth/wait-sign-in")
 		return
 	}
 
@@ -213,6 +218,7 @@ func postWaitSignInService(context *gin.Context) {
 	if errors != "" {
 		log.Printf(errors)
 
+		messages.AddFlashMessage(context, "error", "That is an invalid or out-of-date code.")
 		context.Redirect(http.StatusFound, "/auth/wait-sign-in")
 		return
 	}
@@ -224,6 +230,7 @@ func postWaitSignInService(context *gin.Context) {
 		cookie_access.RemoveCookie(context, emailCookie)
 		cookie_access.SetSessionValue(context, stateIdCookie, "")
 		cookie_access.SetSessionValue(context, isAuthCookie, "true")
+		messages.AddFlashMessage(context, "info", "Signed in successfully.")
 		context.Redirect(http.StatusFound, "/")
 		return
 	} else {

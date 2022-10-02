@@ -13,6 +13,17 @@
     <title>Example MojoAuth app</title>
 </head>
 <body>
+    {{ if .hasInfoFlashes }}
+        <div>
+            {{ .infoFlashes }}
+        </div>
+    {{ end }}
+
+    {{ if .hasErrorFlashes }}
+        <div>
+            {{ .errorFlashes }}
+        </div>
+    {{ end }}
     <div>
         {{template "yield" .}}
     </div>

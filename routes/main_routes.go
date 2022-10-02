@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"mojo-auth-test-1/cookie_access"
+	"mojo-auth-test-1/messages"
 	"mojo-auth-test-1/views"
 
 	"github.com/gin-gonic/gin"
@@ -36,6 +37,7 @@ func Authorizer() gin.HandlerFunc {
 		isAuth := cookie_access.GetSessionValue(context, isAuthCookie)
 		fmt.Printf("Got isAuth %s\n", isAuth)
 		if len(isAuth) == 0 || isAuth != "true" {
+			messages.AddFlashMessage(context, "error", "You must sign in to continue.")
 			context.Redirect(http.StatusTemporaryRedirect, "/auth/sign-in")
 			context.AbortWithStatus(http.StatusTemporaryRedirect)
 			return
