@@ -95,59 +95,108 @@ func getSignInService(context *gin.Context) {
 	}
 }
 
-func postSignInService(context *gin.Context) {
-	authEmail := strings.Trim(context.PostForm("auth_info_email"), " \n\r\t")
-	if len(authEmail) == 0 {
-		RedirectToWithError(context, http.StatusFound, SignInPath, "That is not a valid email.")
-		return
+func signInWithEmail(context *gin.Context, authEmail string) {
+	cookie_access.SetTempCookie(context, emailCookie, authEmail)
+
+	errors := ""
+
+	cfg := mojoauth.Config{
+		ApiKey: os.Getenv("MOJO_APP_ID"),
+	}
+	mojoClient, err := mojoauth.NewMojoAuth(&cfg)
+	var res *httprutils.Response
+	if err != nil {
+		errors += err.(mojoerror.Error).OrigErr().Error()
+		//      respCode = 500
+	} else {
+		body := map[string]string{
+			"email": authEmail,
+		}
+		queryParams := map[string]string{
+			"language": "en",
+		}
+		res, err = api.Mojoauth{Client: mojoClient}.SigninWithEmailOTP(body, queryParams)
+		if err != nil {
+			errors += "SWEOTP: " + err.(mojoerror.Error).OrigErr().Error()
+			//		respCode = 500
+		}
 	}
 
-	if !isValidEmail(authEmail) {
-		RedirectToWithError(context, http.StatusFound, SignInPath, "That is not a valid email.")
-		return
+	if errors != "" {
+		log.Printf(errors)
 	} else {
-		cookie_access.SetTempCookie(context, emailCookie, authEmail)
-
-		errors := ""
-
-		cfg := mojoauth.Config{
-			ApiKey: os.Getenv("MOJO_APP_ID"),
-		}
-		mojoClient, err := mojoauth.NewMojoAuth(&cfg)
-		var res *httprutils.Response
-		if err != nil {
-			errors += err.(mojoerror.Error).OrigErr().Error()
-			//      respCode = 500
+		var data MojoAuthState
+		err = json.Unmarshal([]byte(res.Body), &data)
+		if err == nil {
+			cookie_access.SetSessionValue(context, stateIdCookie, data.StateId)
+			RedirectToWithInfo(context, http.StatusFound, WaitSignInPath, "An email with the validation code has been sent.")
+			return
 		} else {
-			body := map[string]string{
-				"email": authEmail,
-			}
-			queryParams := map[string]string{
-				"language": "en",
-			}
-			res, err = api.Mojoauth{Client: mojoClient}.SigninWithEmailOTP(body, queryParams)
-			if err != nil {
-				errors += "SWEOTP: " + err.(mojoerror.Error).OrigErr().Error()
-				//		respCode = 500
-			}
-		}
-
-		if errors != "" {
-			log.Printf(errors)
-		} else {
-			var data MojoAuthState
-			err = json.Unmarshal([]byte(res.Body), &data)
-			if err == nil {
-				cookie_access.SetSessionValue(context, stateIdCookie, data.StateId)
-				RedirectToWithInfo(context, http.StatusFound, WaitSignInPath, "An email with the validation code has been sent.")
-				return
-			} else {
-				fmt.Println("Error on JSON unmarshall:", err)
-			}
+			fmt.Println("Error on JSON unmarshall:", err)
 		}
 	}
 
 	RedirectToWithError(context, http.StatusFound, SignInPath, "An internal error occured, please try again.")
+}
+
+func signInWithPhone(context *gin.Context, phoneNumber string) {
+	cookie_access.SetTempCookie(context, emailCookie, phoneNumber)
+
+	errors := ""
+
+	cfg := mojoauth.Config{
+		ApiKey: os.Getenv("MOJO_APP_ID"),
+	}
+	mojoClient, err := mojoauth.NewMojoAuth(&cfg)
+	var res *httprutils.Response
+	if err != nil {
+		errors += err.(mojoerror.Error).OrigErr().Error()
+		//      respCode = 500
+	} else {
+		body := map[string]string{
+			"phone": "+1" + phoneNumber,
+		}
+		queryParams := map[string]string{
+			"language": "en",
+		}
+		res, err = api.Mojoauth{Client: mojoClient}.SigninWithPhoneOTP(body, queryParams)
+		if err != nil {
+			errors += "SWPOTP: " + err.(mojoerror.Error).OrigErr().Error()
+			//		respCode = 500
+		}
+	}
+
+	if errors != "" {
+		log.Printf(errors)
+	} else {
+		var data MojoAuthState
+		err = json.Unmarshal([]byte(res.Body), &data)
+		if err == nil {
+			cookie_access.SetSessionValue(context, stateIdCookie, data.StateId)
+			RedirectToWithInfo(context, http.StatusFound, WaitSignInPath, "An text with the validation code has been sent.")
+			return
+		} else {
+			fmt.Println("Error on JSON unmarshall:", err)
+		}
+	}
+
+	RedirectToWithError(context, http.StatusFound, SignInPath, "An internal error occured, please try again.")
+}
+
+func postSignInService(context *gin.Context) {
+	authEmail := strings.Trim(context.PostForm("auth_info_email"), " \n\r\t")
+	if len(authEmail) != 0 && isValidEmail(authEmail) {
+		signInWithEmail(context, authEmail)
+		return
+	}
+
+	phoneNumber := strings.Trim(context.PostForm("auth_info_phone"), " \n\r\t")
+	if len(phoneNumber) == 10 {
+		signInWithPhone(context, phoneNumber)
+		return
+	}
+
+	RedirectToWithError(context, http.StatusFound, SignInPath, "You must enter an email or phone number to sign in.")
 }
 
 func postSignOutService(context *gin.Context) {
