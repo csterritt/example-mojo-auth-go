@@ -8,6 +8,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"mojo-auth-test-1/cookie_access"
 	"mojo-auth-test-1/messages"
@@ -78,6 +79,20 @@ func init() {
 // validate that the given string looks like an email address
 func isValidEmail(email string) bool {
 	return emailPattern.MatchString(email)
+}
+
+func testIsValidPhoneAndClean(phoneNumber string) (bool, string) {
+	cleanNumber := make([]rune, 0)
+
+	for _, ch := range phoneNumber {
+		if unicode.IsDigit(ch) {
+			cleanNumber = append(cleanNumber, ch)
+		}
+	}
+
+	res := string(cleanNumber)
+
+	return len(res) == 10, res
 }
 
 func getSignInService(context *gin.Context) {
@@ -191,12 +206,16 @@ func postSignInService(context *gin.Context) {
 	}
 
 	phoneNumber := strings.Trim(context.PostForm("auth_info_phone"), " \n\r\t")
-	if len(phoneNumber) == 10 {
-		signInWithPhone(context, phoneNumber)
-		return
+	if len(phoneNumber) != 0 {
+		isValid, cleanNumber := testIsValidPhoneAndClean(phoneNumber)
+
+		if isValid {
+			signInWithPhone(context, cleanNumber)
+			return
+		}
 	}
 
-	RedirectToWithError(context, http.StatusFound, SignInPath, "You must enter an email or phone number to sign in.")
+	RedirectToWithError(context, http.StatusFound, SignInPath, "You must enter a valid email or phone number to sign in.")
 }
 
 func postSignOutService(context *gin.Context) {
