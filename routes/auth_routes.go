@@ -65,6 +65,7 @@ type MojoAuthResult struct {
 const emailCookie = "given-email"
 const stateIdCookie = "state-id"
 const isAuthCookie = "is-auth"
+const wantedLocationCookie = "wanted-loc"
 
 var signInTemplate *views.View
 var waitSignInTemplate *views.View
@@ -136,11 +137,9 @@ func postSignInService(context *gin.Context) {
 		if errors != "" {
 			log.Printf(errors)
 		} else {
-			fmt.Printf("Raw body: '%s'\n", res.Body)
 			var data MojoAuthState
 			err = json.Unmarshal([]byte(res.Body), &data)
 			if err == nil {
-				fmt.Printf("Raw body: '%s', struct %#v\n", res.Body, data)
 				cookie_access.SetSessionValue(context, stateIdCookie, data.StateId)
 				messages.AddFlashMessage(context, "info", "An email with the validation code has been sent.")
 				context.Redirect(http.StatusFound, "/auth/wait-sign-in")
@@ -210,35 +209,28 @@ func postWaitSignInService(context *gin.Context) {
 	}
 	errors := ""
 	mojoClient, err := go_mojoauth.NewMojoAuth(&cfg)
-	res, err := api.Mojoauth{Client: mojoClient}.VerifyEmailOTP(body)
+	_, err = api.Mojoauth{Client: mojoClient}.VerifyEmailOTP(body)
 	if err != nil {
 		errors += err.(mojoerror.Error).OrigErr().Error()
-		//		respCode = 500
-	}
-
-	if errors != "" {
 		log.Printf(errors)
 
 		messages.AddFlashMessage(context, "error", "That is an invalid or out-of-date code.")
 		context.Redirect(http.StatusFound, "/auth/wait-sign-in")
 		return
 	}
-	fmt.Println(res.Body)
-	var info MojoAuthResult
-	err = json.Unmarshal([]byte(res.Body), &info)
-	if err == nil {
-		fmt.Printf("Saving jwtToken of length %d, refreshToken of length %d\n", len(info.Oauth.AccessToken), len(info.Oauth.RefreshToken))
-		cookie_access.RemoveCookie(context, emailCookie)
-		cookie_access.SetSessionValue(context, stateIdCookie, "")
-		cookie_access.SetSessionValue(context, isAuthCookie, "true")
-		messages.AddFlashMessage(context, "info", "Signed in successfully.")
-		context.Redirect(http.StatusFound, "/")
-		return
-	} else {
-		fmt.Printf("Got error unmarshalling MojoAuthResult: %v\n", err)
-	}
 
-	context.Redirect(http.StatusFound, "/auth/wait-sign-in")
+	cookie_access.RemoveCookie(context, emailCookie)
+	cookie_access.SetSessionValue(context, stateIdCookie, "")
+	cookie_access.SetSessionValue(context, isAuthCookie, "true")
+	messages.AddFlashMessage(context, "info", "Signed in successfully.")
+
+	wanted := cookie_access.GetSessionValue(context, wantedLocationCookie)
+	if len(wanted) > 0 {
+		cookie_access.SetSessionValue(context, wantedLocationCookie, "")
+		context.Redirect(http.StatusFound, wanted)
+	} else {
+		context.Redirect(http.StatusFound, "/")
+	}
 }
 
 func SkipAuthorizer() gin.HandlerFunc {
