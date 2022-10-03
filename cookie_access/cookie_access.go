@@ -8,8 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GetCookie - Get the value of the named cookie, or return ""
-func GetCookie(context *gin.Context, name string) string {
+// GetTempCookie - Get the value of the named cookie, or return ""
+func GetTempCookie(context *gin.Context, name string) string {
 	var value string
 	holder, err := context.Request.Cookie(name)
 	if err != nil {
@@ -21,9 +21,9 @@ func GetCookie(context *gin.Context, name string) string {
 	return strings.Trim(value, " \n\r\t")
 }
 
-// SetSessionCookie - Add a new browser-session (that is, it lives until the browser is closed)
+// SetTempCookie - Add a new browser-session (that is, it lives until the browser is closed)
 // cookie into the cookie storage.
-func SetSessionCookie(context *gin.Context, name, value string) {
+func SetTempCookie(context *gin.Context, name, value string) {
 	cookie := &http.Cookie{
 		Name:     name,
 		Value:    value,

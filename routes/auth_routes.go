@@ -81,7 +81,7 @@ func isValidEmail(email string) bool {
 }
 
 func getSignInService(context *gin.Context) {
-	email := cookie_access.GetCookie(context, emailCookie)
+	email := cookie_access.GetTempCookie(context, emailCookie)
 	if len(email) > 0 {
 		context.Redirect(http.StatusFound, "/auth/wait-sign-in")
 		return
@@ -108,7 +108,7 @@ func postSignInService(context *gin.Context) {
 		context.Redirect(http.StatusFound, "/auth/sign-in")
 		return
 	} else {
-		cookie_access.SetSessionCookie(context, emailCookie, authEmail)
+		cookie_access.SetTempCookie(context, emailCookie, authEmail)
 
 		errors := ""
 
@@ -163,7 +163,7 @@ func postSignOutService(context *gin.Context) {
 }
 
 func getWaitSignInService(context *gin.Context) {
-	email := cookie_access.GetCookie(context, emailCookie)
+	email := cookie_access.GetTempCookie(context, emailCookie)
 	if len(email) == 0 {
 		context.Redirect(http.StatusFound, "/auth/sign-in")
 		return
