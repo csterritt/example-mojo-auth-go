@@ -38,7 +38,7 @@ func Authorizer() gin.HandlerFunc {
 		fmt.Printf("Got isAuth %s\n", isAuth)
 		if len(isAuth) == 0 || isAuth != "true" {
 			cookie_access.SetSessionValue(context, wantedLocationCookie, context.FullPath())
-			messages.AddFlashMessage(context, "error", "You must sign in to continue.")
+			messages.AddFlashMessage(context, messages.ErrorMessage, "You must sign in to continue.")
 			context.Redirect(http.StatusTemporaryRedirect, "/auth/sign-in")
 			context.AbortWithStatus(http.StatusTemporaryRedirect)
 			return

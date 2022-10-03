@@ -30,14 +30,14 @@ type View struct {
 }
 
 func (v *View) Render(context *gin.Context, data interface{}) error {
-	infoFlashes := messages.GetFlashMessages(context, "info")
+	infoFlashes := messages.GetFlashMessages(context, messages.InfoMessage)
 	hasInfoFlashes := infoFlashes != nil && len(infoFlashes) > 0
 	if hasInfoFlashes {
 		for i := range infoFlashes {
 			infoFlashes[i] = fmt.Sprintf("<div>%s</div>", infoFlashes[i])
 		}
 	}
-	errorFlashes := messages.GetFlashMessages(context, "error")
+	errorFlashes := messages.GetFlashMessages(context, messages.ErrorMessage)
 	hasErrorFlashes := errorFlashes != nil && len(errorFlashes) > 0
 	if hasErrorFlashes {
 		for i := range errorFlashes {

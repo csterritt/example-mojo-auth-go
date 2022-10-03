@@ -5,6 +5,15 @@ import (
 	"github.com/gorilla/sessions"
 )
 
+type FlashType int
+
+const (
+	InfoMessage FlashType = iota
+	ErrorMessage
+)
+
+var flashNames = []string{"info", "error"}
+
 // Name of the cookie.
 const sessionName = "flash-messages"
 
@@ -15,17 +24,17 @@ func getCookieStore() *sessions.CookieStore {
 }
 
 // AddFlashMessage -- Add a new message into the cookie storage.
-func AddFlashMessage(context *gin.Context, name, value string) {
+func AddFlashMessage(context *gin.Context, messageType FlashType, value string) {
 	session, _ := getCookieStore().Get(context.Request, sessionName)
-	session.AddFlash(value, name)
+	session.AddFlash(value, flashNames[messageType])
 
 	_ = session.Save(context.Request, context.Writer)
 }
 
 // GetFlashMessages -- Get flash messages from the cookie storage.
-func GetFlashMessages(context *gin.Context, name string) []string {
+func GetFlashMessages(context *gin.Context, messageType FlashType) []string {
 	session, _ := getCookieStore().Get(context.Request, sessionName)
-	fm := session.Flashes(name)
+	fm := session.Flashes(flashNames[messageType])
 	// If we have some messages.
 	if len(fm) > 0 {
 		_ = session.Save(context.Request, context.Writer)
