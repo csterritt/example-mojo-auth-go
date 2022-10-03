@@ -151,7 +151,7 @@ func signInWithEmail(context *gin.Context, authEmail string) {
 		}
 	}
 
-	RedirectToWithError(context, http.StatusFound, SignInPath, "An internal error occured, please try again.")
+	RedirectToWithError(context, http.StatusFound, SignInPath, "An internal error occurred, please try again.")
 }
 
 func signInWithPhone(context *gin.Context, phoneNumber string) {
@@ -195,7 +195,7 @@ func signInWithPhone(context *gin.Context, phoneNumber string) {
 		}
 	}
 
-	RedirectToWithError(context, http.StatusFound, SignInPath, "An internal error occured, please try again.")
+	RedirectToWithError(context, http.StatusFound, SignInPath, "An internal error occurred, please try again.")
 }
 
 func postSignInService(context *gin.Context) {
