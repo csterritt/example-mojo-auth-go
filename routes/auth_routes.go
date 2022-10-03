@@ -98,14 +98,12 @@ func getSignInService(context *gin.Context) {
 func postSignInService(context *gin.Context) {
 	authEmail := strings.Trim(context.PostForm("auth_info_email"), " \n\r\t")
 	if len(authEmail) == 0 {
-		messages.AddFlashMessage(context, messages.ErrorMessage, "That is not a valid email.")
-		RedirectTo(context, http.StatusFound, SignInPath)
+		RedirectToWithError(context, http.StatusFound, SignInPath, "That is not a valid email.")
 		return
 	}
 
 	if !isValidEmail(authEmail) {
-		messages.AddFlashMessage(context, messages.ErrorMessage, "That is not a valid email.")
-		RedirectTo(context, http.StatusFound, SignInPath)
+		RedirectToWithError(context, http.StatusFound, SignInPath, "That is not a valid email.")
 		return
 	} else {
 		cookie_access.SetTempCookie(context, emailCookie, authEmail)
@@ -141,8 +139,7 @@ func postSignInService(context *gin.Context) {
 			err = json.Unmarshal([]byte(res.Body), &data)
 			if err == nil {
 				cookie_access.SetSessionValue(context, stateIdCookie, data.StateId)
-				messages.AddFlashMessage(context, messages.InfoMessage, "An email with the validation code has been sent.")
-				RedirectTo(context, http.StatusFound, WaitSignInPath)
+				RedirectToWithInfo(context, http.StatusFound, WaitSignInPath, "An email with the validation code has been sent.")
 				return
 			} else {
 				fmt.Println("Error on JSON unmarshall:", err)
@@ -150,16 +147,14 @@ func postSignInService(context *gin.Context) {
 		}
 	}
 
-	messages.AddFlashMessage(context, messages.ErrorMessage, "An internal error occured, please try again.")
-	RedirectTo(context, http.StatusFound, SignInPath)
+	RedirectToWithError(context, http.StatusFound, SignInPath, "An internal error occured, please try again.")
 }
 
 func postSignOutService(context *gin.Context) {
 	cookie_access.SetSessionValue(context, emailCookie, "")
 	cookie_access.SetSessionValue(context, stateIdCookie, "")
 	cookie_access.SetSessionValue(context, isAuthCookie, "")
-	messages.AddFlashMessage(context, messages.InfoMessage, "Signed out successfully.")
-	RedirectTo(context, http.StatusFound, RootPath)
+	RedirectToWithInfo(context, http.StatusFound, RootPath, "Signed out successfully.")
 }
 
 func getWaitSignInService(context *gin.Context) {
@@ -180,8 +175,7 @@ func postCancelSignInService(context *gin.Context) {
 	cookie_access.SetSessionValue(context, emailCookie, "")
 	cookie_access.SetSessionValue(context, stateIdCookie, "")
 	cookie_access.SetSessionValue(context, isAuthCookie, "")
-	messages.AddFlashMessage(context, messages.InfoMessage, "Sign in cancelled.")
-	RedirectTo(context, http.StatusFound, RootPath)
+	RedirectToWithInfo(context, http.StatusFound, RootPath, "Sign in cancelled.")
 }
 
 func postWaitSignInService(context *gin.Context) {
@@ -195,8 +189,7 @@ func postWaitSignInService(context *gin.Context) {
 
 	authCode := strings.Trim(context.PostForm("auth_code_input"), " \n\r\t")
 	if len(authCode) == 0 {
-		messages.AddFlashMessage(context, messages.ErrorMessage, "You must enter the sign-in code from the email.")
-		RedirectTo(context, http.StatusFound, WaitSignInPath)
+		RedirectToWithError(context, http.StatusFound, WaitSignInPath, "You must enter the sign-in code from the email.")
 		return
 	}
 
@@ -214,22 +207,21 @@ func postWaitSignInService(context *gin.Context) {
 		errors += err.(mojoerror.Error).OrigErr().Error()
 		log.Printf(errors)
 
-		messages.AddFlashMessage(context, messages.ErrorMessage, "That is an invalid or out-of-date code.")
-		RedirectTo(context, http.StatusFound, WaitSignInPath)
+		RedirectToWithError(context, http.StatusFound, WaitSignInPath, "That is an invalid or out-of-date code.")
 		return
 	}
 
 	cookie_access.RemoveCookie(context, emailCookie)
 	cookie_access.SetSessionValue(context, stateIdCookie, "")
 	cookie_access.SetSessionValue(context, isAuthCookie, "true")
-	messages.AddFlashMessage(context, messages.InfoMessage, "Signed in successfully.")
 
 	wanted := cookie_access.GetSessionValue(context, wantedLocationCookie)
 	if len(wanted) > 0 {
 		cookie_access.SetSessionValue(context, wantedLocationCookie, "")
+		messages.AddFlashMessage(context, messages.InfoMessage, "Signed in successfully.")
 		context.Redirect(http.StatusFound, wanted)
 	} else {
-		RedirectTo(context, http.StatusFound, RootPath)
+		RedirectToWithInfo(context, http.StatusFound, RootPath, "Signed in successfully.")
 	}
 }
 

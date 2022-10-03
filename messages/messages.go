@@ -24,9 +24,9 @@ func getCookieStore() *sessions.CookieStore {
 }
 
 // AddFlashMessage -- Add a new message into the cookie storage.
-func AddFlashMessage(context *gin.Context, messageType FlashType, value string) {
+func AddFlashMessage(context *gin.Context, messageType FlashType, message string) {
 	session, _ := getCookieStore().Get(context.Request, sessionName)
-	session.AddFlash(value, flashNames[messageType])
+	session.AddFlash(message, flashNames[messageType])
 
 	_ = session.Save(context.Request, context.Writer)
 }
