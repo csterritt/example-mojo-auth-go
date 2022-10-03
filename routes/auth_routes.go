@@ -14,7 +14,7 @@ import (
 	"mojo-auth-test-1/views"
 
 	"github.com/gin-gonic/gin"
-	go_mojoauth "github.com/mojoauth/go-sdk"
+	mojoauth "github.com/mojoauth/go-sdk"
 	"github.com/mojoauth/go-sdk/api"
 	"github.com/mojoauth/go-sdk/httprutils"
 	"github.com/mojoauth/go-sdk/mojoerror"
@@ -83,7 +83,7 @@ func isValidEmail(email string) bool {
 func getSignInService(context *gin.Context) {
 	email := cookie_access.GetTempCookie(context, emailCookie)
 	if len(email) > 0 {
-		context.Redirect(http.StatusFound, "/auth/wait-sign-in")
+		RedirectTo(context, http.StatusFound, WaitSignInPath)
 		return
 	}
 
@@ -99,23 +99,23 @@ func postSignInService(context *gin.Context) {
 	authEmail := strings.Trim(context.PostForm("auth_info_email"), " \n\r\t")
 	if len(authEmail) == 0 {
 		messages.AddFlashMessage(context, messages.ErrorMessage, "That is not a valid email.")
-		context.Redirect(http.StatusFound, "/auth/sign-in")
+		RedirectTo(context, http.StatusFound, SignInPath)
 		return
 	}
 
 	if !isValidEmail(authEmail) {
 		messages.AddFlashMessage(context, messages.ErrorMessage, "That is not a valid email.")
-		context.Redirect(http.StatusFound, "/auth/sign-in")
+		RedirectTo(context, http.StatusFound, SignInPath)
 		return
 	} else {
 		cookie_access.SetTempCookie(context, emailCookie, authEmail)
 
 		errors := ""
 
-		cfg := go_mojoauth.Config{
+		cfg := mojoauth.Config{
 			ApiKey: os.Getenv("MOJO_APP_ID"),
 		}
-		mojoClient, err := go_mojoauth.NewMojoAuth(&cfg)
+		mojoClient, err := mojoauth.NewMojoAuth(&cfg)
 		var res *httprutils.Response
 		if err != nil {
 			errors += err.(mojoerror.Error).OrigErr().Error()
@@ -142,7 +142,7 @@ func postSignInService(context *gin.Context) {
 			if err == nil {
 				cookie_access.SetSessionValue(context, stateIdCookie, data.StateId)
 				messages.AddFlashMessage(context, messages.InfoMessage, "An email with the validation code has been sent.")
-				context.Redirect(http.StatusFound, "/auth/wait-sign-in")
+				RedirectTo(context, http.StatusFound, WaitSignInPath)
 				return
 			} else {
 				fmt.Println("Error on JSON unmarshall:", err)
@@ -151,7 +151,7 @@ func postSignInService(context *gin.Context) {
 	}
 
 	messages.AddFlashMessage(context, messages.ErrorMessage, "An internal error occured, please try again.")
-	context.Redirect(http.StatusFound, "/auth/sign-in")
+	RedirectTo(context, http.StatusFound, SignInPath)
 }
 
 func postSignOutService(context *gin.Context) {
@@ -159,13 +159,13 @@ func postSignOutService(context *gin.Context) {
 	cookie_access.SetSessionValue(context, stateIdCookie, "")
 	cookie_access.SetSessionValue(context, isAuthCookie, "")
 	messages.AddFlashMessage(context, messages.InfoMessage, "Signed out successfully.")
-	context.Redirect(http.StatusFound, "/")
+	RedirectTo(context, http.StatusFound, RootPath)
 }
 
 func getWaitSignInService(context *gin.Context) {
 	email := cookie_access.GetTempCookie(context, emailCookie)
 	if len(email) == 0 {
-		context.Redirect(http.StatusFound, "/auth/sign-in")
+		RedirectTo(context, http.StatusFound, SignInPath)
 		return
 	}
 
@@ -181,7 +181,7 @@ func postCancelSignInService(context *gin.Context) {
 	cookie_access.SetSessionValue(context, stateIdCookie, "")
 	cookie_access.SetSessionValue(context, isAuthCookie, "")
 	messages.AddFlashMessage(context, messages.InfoMessage, "Sign in cancelled.")
-	context.Redirect(http.StatusFound, "/")
+	RedirectTo(context, http.StatusFound, RootPath)
 }
 
 func postWaitSignInService(context *gin.Context) {
@@ -190,13 +190,13 @@ func postWaitSignInService(context *gin.Context) {
 		cookie_access.RemoveCookie(context, emailCookie)
 		cookie_access.SetSessionValue(context, stateIdCookie, "")
 		cookie_access.SetSessionValue(context, isAuthCookie, "")
-		context.Redirect(http.StatusFound, "/")
+		RedirectTo(context, http.StatusFound, RootPath)
 	}
 
 	authCode := strings.Trim(context.PostForm("auth_code_input"), " \n\r\t")
 	if len(authCode) == 0 {
 		messages.AddFlashMessage(context, messages.ErrorMessage, "You must enter the sign-in code from the email.")
-		context.Redirect(http.StatusFound, "/auth/wait-sign-in")
+		RedirectTo(context, http.StatusFound, WaitSignInPath)
 		return
 	}
 
@@ -204,18 +204,18 @@ func postWaitSignInService(context *gin.Context) {
 		"state_id": stateIdValue,
 		"otp":      authCode,
 	}
-	cfg := go_mojoauth.Config{
+	cfg := mojoauth.Config{
 		ApiKey: os.Getenv("MOJO_APP_ID"),
 	}
 	errors := ""
-	mojoClient, err := go_mojoauth.NewMojoAuth(&cfg)
+	mojoClient, err := mojoauth.NewMojoAuth(&cfg)
 	_, err = api.Mojoauth{Client: mojoClient}.VerifyEmailOTP(body)
 	if err != nil {
 		errors += err.(mojoerror.Error).OrigErr().Error()
 		log.Printf(errors)
 
 		messages.AddFlashMessage(context, messages.ErrorMessage, "That is an invalid or out-of-date code.")
-		context.Redirect(http.StatusFound, "/auth/wait-sign-in")
+		RedirectTo(context, http.StatusFound, WaitSignInPath)
 		return
 	}
 
@@ -229,7 +229,7 @@ func postWaitSignInService(context *gin.Context) {
 		cookie_access.SetSessionValue(context, wantedLocationCookie, "")
 		context.Redirect(http.StatusFound, wanted)
 	} else {
-		context.Redirect(http.StatusFound, "/")
+		RedirectTo(context, http.StatusFound, RootPath)
 	}
 }
 
@@ -237,7 +237,7 @@ func SkipAuthorizer() gin.HandlerFunc {
 	return func(context *gin.Context) {
 		isAuth := cookie_access.GetSessionValue(context, isAuthCookie)
 		if isAuth == "true" {
-			context.Redirect(http.StatusFound, "/")
+			RedirectTo(context, http.StatusFound, RootPath)
 		}
 
 		context.Next()
@@ -249,10 +249,10 @@ func InitializeAuthRoutes(router *gin.Engine) {
 	waitSignInTemplate = views.NewView("layout.html", "templates/views/auth/waiting.html")
 
 	skipAuth := SkipAuthorizer()
-	router.GET("/auth/sign-in", skipAuth, getSignInService)
-	router.POST("/auth/sign-in", postSignInService)
-	router.GET("/auth/wait-sign-in", skipAuth, getWaitSignInService)
-	router.POST("/auth/wait-sign-in", postWaitSignInService)
-	router.POST("/auth/cancel-sign-in", postCancelSignInService)
-	router.POST("/auth/sign-out", postSignOutService)
+	router.GET(Paths[SignInPath], skipAuth, getSignInService)
+	router.POST(Paths[SignInPath], postSignInService)
+	router.GET(Paths[WaitSignInPath], skipAuth, getWaitSignInService)
+	router.POST(Paths[WaitSignInPath], postWaitSignInService)
+	router.POST(Paths[CancelSignInPath], postCancelSignInService)
+	router.POST(Paths[SignOutPath], postSignOutService)
 }

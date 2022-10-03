@@ -39,7 +39,7 @@ func Authorizer() gin.HandlerFunc {
 		if len(isAuth) == 0 || isAuth != "true" {
 			cookie_access.SetSessionValue(context, wantedLocationCookie, context.FullPath())
 			messages.AddFlashMessage(context, messages.ErrorMessage, "You must sign in to continue.")
-			context.Redirect(http.StatusTemporaryRedirect, "/auth/sign-in")
+			RedirectTo(context, http.StatusTemporaryRedirect, SignInPath)
 			context.AbortWithStatus(http.StatusTemporaryRedirect)
 			return
 		}
@@ -54,6 +54,6 @@ func InitializeMainRoutes(router *gin.Engine) {
 
 	authorized := Authorizer()
 	//router.GET("/", authorized, getIndexService)
-	router.GET("/", getIndexService)
-	router.GET("/show", authorized, getShowService)
+	router.GET(Paths[RootPath], getIndexService)
+	router.GET(Paths[ShowPath], authorized, getShowService)
 }
