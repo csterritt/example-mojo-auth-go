@@ -144,6 +144,7 @@ func postSignInService(context *gin.Context) {
 				cookie_access.SetSessionValue(context, stateIdCookie, data.StateId)
 				messages.AddFlashMessage(context, "info", "An email with the validation code has been sent.")
 				context.Redirect(http.StatusFound, "/auth/wait-sign-in")
+				return
 			} else {
 				fmt.Println("Error on JSON unmarshall:", err)
 			}
@@ -242,12 +243,11 @@ func postWaitSignInService(context *gin.Context) {
 
 func SkipAuthorizer() gin.HandlerFunc {
 	return func(context *gin.Context) {
-		//emailValue := cookie_access.GetSessionValue(context, emailCookie)
-		//
-		//if len(emailValue) > 0 {
-		//	context.Redirect(http.StatusTemporaryRedirect, "/")
-		//	context.AbortWithStatus(http.StatusTemporaryRedirect)
-		//}
+		isAuth := cookie_access.GetSessionValue(context, isAuthCookie)
+		if isAuth == "true" {
+			context.Redirect(http.StatusFound, "/")
+		}
+
 		context.Next()
 	}
 }
